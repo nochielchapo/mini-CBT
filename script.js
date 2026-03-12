@@ -1,41 +1,38 @@
 
     (() => {
-     let quiz = [];
-   window.onload = () => {
-      fetch('questions.json').then(res => res.json()).then(data => {
-        quiz = data;
-        document.getElementByClass("center-container").style.display = 'block';
-      });
-    };
+ let quiz = [];
+window.onload = () => {
+  document.querySelector(".center-container").style.display = 'block';
+};
 
-      // Elements
-      const startScreen = document.getElementById("start-screen");
-      const quizScreen = document.getElementById("quiz-screen");
-      const resultScreen = document.getElementById("result-screen");
-      const adminLoginScreen = document.getElementById("admin-login");
-      const adminPanelScreen = document.getElementById("admin-panel");
-      const startBtn = document.getElementById("start-btn");
-      const adminLoginBtn = document.getElementById("admin-login-btn");
-      const nextBtn = document.getElementById("next-btn");
+  // Elements
+  const startScreen = document.getElementById("start-screen");
+  const quizScreen = document.getElementById("quiz-screen");
+  const resultScreen = document.getElementById("result-screen");
+  const adminLoginScreen = document.getElementById("admin-login");
+  const adminPanelScreen = document.getElementById("admin-panel");
+  const startBtn = document.getElementById("start-btn");
+  const adminLoginBtn = document.getElementById("admin-login-btn");
+  const nextBtn = document.getElementById("next-btn");
 
-       const timerContainer = document.getElementById('timerDisplay');
-       const warningSound = document.getElementById('warningSound');
-      const progressBar = document.getElementById("progress");
-      const quizContent = document.getElementById("quiz-content");
-      const resultSummary = document.getElementById("result-summary");
-      const downloadResultBtn = document.getElementById("download-result-btn");
-      const newUserBtn = document.getElementById("new-user-btn");
-      const studentNameInput = document.getElementById("student-name");
-      const studentClassInput = document.getElementById("student-class");
-      const startError = document.getElementById("start-error");
-      const adminPassInput = document.getElementById("admin-pass");
-      const adminLoginSubmitBtn = document.getElementById("admin-login-submit-btn");
-      const adminLoginCancelBtn = document.getElementById("admin-login-cancel-btn");
-      const adminLoginError = document.getElementById("admin-login-error");
-      const downloadAllBtn = document.getElementById("download-all-btn");
-      const clearAllBtn = document.getElementById("clear-all-btn");
-      const adminLogoutBtn = document.getElementById("admin-logout-btn");
-      const adminResultsContainer = document.getElementById("admin-results-container");
+   const timerContainer = document.getElementById('timerDisplay');
+   const warningSound = document.getElementById('warningSound');
+  const progressBar = document.getElementById("progress");
+  const quizContent = document.getElementById("quiz-content");
+  const resultSummary = document.getElementById("result-summary");
+  const downloadResultBtn = document.getElementById("download-result-btn");
+  const newUserBtn = document.getElementById("new-user-btn");
+  const studentNameInput = document.getElementById("student-name");
+  const studentClassInput = document.getElementById("student-class");
+  const startError = document.getElementById("start-error");
+  const adminPassInput = document.getElementById("admin-pass");
+  const adminLoginSubmitBtn = document.getElementById("admin-login-submit-btn");
+  const adminLoginCancelBtn = document.getElementById("admin-login-cancel-btn");
+  const adminLoginError = document.getElementById("admin-login-error");
+  const downloadAllBtn = document.getElementById("download-all-btn");
+  const clearAllBtn = document.getElementById("clear-all-btn");
+  const adminLogoutBtn = document.getElementById("admin-logout-btn");
+  const adminResultsContainer = document.getElementById("admin-results-container");
 const toggleBtn = document.getElementById("theme-toggle");
  const timerDisplay = document.getElementById('timerDisplay');
   
@@ -43,13 +40,10 @@ const toggleBtn = document.getElementById("theme-toggle");
       const body = document.body;
 
 
-
-
       // Initial setup      
       const QUIZ_TIME = 1200; // total time in seconds for the quiz
 
   
-
       // Set initial theme based on system preference
       // State variables
       let currentQuestionIndex = 0;
@@ -65,8 +59,32 @@ const toggleBtn = document.getElementById("theme-toggle");
   
 
 
-
       // Utility functions
+      function getQuizFileForClass(studentClass) {
+        const classToQuizMap = {
+          "Scratch Programming": "questions.json",
+          "Web Development": "questions_1.json",
+          "Python Basics": "questions_2.json"
+        };
+        
+        return classToQuizMap[studentClass] || "questions.json"; // Default fallback
+      }
+
+      function loadQuiz(filename) {
+        fetch(filename)
+          .then(res => {
+            if (!res.ok) throw new Error(`Failed to load ${filename}`);
+            return res.json();
+          })
+          .then(data => {
+            quiz = data;
+          })
+          .catch(err => {
+            startError.textContent = `Error loading quiz file: ${err.message}`;
+            console.error(err);
+          });
+      }
+
       function saveResult(result) {
         let results = JSON.parse(localStorage.getItem("quizResults") || "[]");
         results.push(result);
@@ -251,9 +269,7 @@ const downloadResultPDF = () => {
   doc.save(`${studentName}_${studentClass}_result.pdf`);
 };
  
-
-     
-
+  
 
 
   async function downloadAllResultsPDF() {
@@ -289,7 +305,6 @@ const downloadResultPDF = () => {
           doc.addPage();
           y = 20;
         }
-
 
     // ➤ GROUP BY CLASS
     const grouped = {};
@@ -336,7 +351,7 @@ const downloadResultPDF = () => {
           doc.setTextColor(0, 0, 0);
           doc.text(`Q${i + 1}. ${q.question}`, 10, y); y += 5;
 
-          doc.setTextColor(correct ? 0 : 255, correct ? 128 : 0, 0);
+          doc.setTextColor(correct ? 0 : 255, correct ? 128 : 0);
           doc.text(`${correct ? "✔️" : "❌"} Your answer: ${ans || 'No answer'}`, 10, y); y += 5;
 
           doc.setTextColor(0, 0, 255);
@@ -363,7 +378,6 @@ const downloadResultPDF = () => {
     doc.save("All_Students_Results_Report.pdf");
   }
 
-
       // Event handlers
       startBtn.onclick = () => {
         const name = studentNameInput.value.trim();
@@ -378,6 +392,10 @@ const downloadResultPDF = () => {
           startError.textContent = "User already took the quiz. Only one attempt allowed.";
           return;
         }
+
+        // Load the appropriate quiz file based on selected class
+        const quizFile = getQuizFileForClass(cls);
+        loadQuiz(quizFile);
 
         startError.textContent = "";
         studentInfo = { name, class: cls };
@@ -404,9 +422,7 @@ const downloadResultPDF = () => {
       };
   
   
-
-     
-
+      
 
       function updateTimer() {
         timerDisplay.textContent = timer;
@@ -424,7 +440,6 @@ const downloadResultPDF = () => {
       } else {
         timerDisplay.classList.remove("warning", "danger");
       }
-
 
 
       }
@@ -453,7 +468,6 @@ const downloadResultPDF = () => {
         showScreen(resultScreen);
         showResult();
       }
-
 
 
       newUserBtn.onclick = () => {
@@ -495,13 +509,12 @@ const downloadResultPDF = () => {
 
  downloadResultBtn.onclick = () => {
         downloadResultPDF();
-      };
+      };  
       
       downloadAllBtn.onclick = () => {
         downloadAllResultsPDF();
-      };
+      }; 
     
-
       clearAllBtn.onclick = () => {
         clearAllResults();
         renderAdminResults();
@@ -514,5 +527,4 @@ toggleBtn.addEventListener("click", () => {
   body.classList.toggle("dark");
   toggleBtn.textContent = body.classList.contains("dark") ? "🌙" : "🌞";
 });
-    })();
-  
+})();
