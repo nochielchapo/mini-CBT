@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz Results Report</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f2f2f2;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+    body.dark {
+      background: #121212;
+      color: #fff;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    h1 {
+      text-align: center;
+    }
+    h2 {
+      margin-top: 40px;
+    }
+    body.dark #quizStatsTable,
+    body.dark summary,
+    body.dark details,
+    body.dark table,
+    body.dark th,
+    body.dark td,
+    body.dark #quizStatsBody {
+      color: #fff;
+      background: #1e1e1e;
+    }
+    details {
+      margin-bottom: 1em;
+      background: #fff;
+      padding: 1em;
+      border-radius: 8px;
+    }
+    summary {
+      font-weight: bold;
+      font-size: 1.2em;
+      cursor: pointer;
+    }
+    #quizStatsTable {
+      overflow-x: auto;
+      width: 90%;
+      margin: 20px auto;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+    }
+    body.dark #quizStatsTable {
+      background: #1e1e1e;
+      box-shadow: 0 0 15px #444;
+    }
+    table {
+      width: 100%;
+      min-width: 600px;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      table-layout: fixed;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 12px 16px;
+      text-align: left;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+    tr:hover {
+      background-color: #f9f9f9;
+      transition: background-color 0.3s ease;
+    }
+    .correct {
+      color: green;
+    }
+    .wrong {
+      color: red;
+    }
+    .explanation {
+      font-style: italic;
+      color: #666;
+    }
+    .btn {
+      display: block;
+      margin: 30px auto;
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background-color: #219150;
+    }
+    @media (max-width: 600px) {
+      table {
+        font-size: 14px;
+      }
+      th, td {
+        padding: 10px;
+      }
+    }
+    .theme-toggle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: transparent;
+      border: none;
+       font-size: clamp( 1rem, 2vw, 1.5rem);
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+  <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌞</button>
+
+  <div id="quizStatsTable">
+    <h1>📊 Quiz Results Report</h1>
+    <h2>📚 Grouped by Class</h2>
+    <p><strong>Total Students:</strong> <span id="totalStudents"></span></p>
+    <p><strong>Total Questions:</strong> <span id="totalQuestions"></span></p>
+    <p><strong>Average Score:</strong> <span id="averageScore"></span></p>
+    <table>
+      <tbody id="quizStatsBody"></tbody>
+    </table>
+  </div>
+
+  <div id="groupedTable"></div>
+
+  <script>
+    const body = document.body;
+    const toggleBtn = document.getElementById("theme-toggle");
+    toggleBtn.addEventListener("click", () => {
+      body.classList.toggle("dark");
+      toggleBtn.textContent = body.classList.contains("dark") ? "🌙" : "🌞";
+    });
+
+    function getAllResults() {
+      return JSON.parse(localStorage.getItem("quizResults") || "[]");
+    }
+
+    function renderQuizStatsTable(results, questions) {
+      const tbody = document.getElementById("quizStatsBody");
+      const totalQuestions = questions.length;
+      let totalScoreSum = 0;
+
+      results.forEach((r) => {
+        const score = r.answers.filter((a, index) => a === questions[index].answer).length;
+        totalScoreSum += score;
+      });
+
+      document.getElementById("totalStudents").textContent = results.length;
+      document.getElementById("totalQuestions").textContent = totalQuestions;
+      document.getElementById("averageScore").textContent = (totalScoreSum / results.length).toFixed(2);
+    }
+
+    function buildGroupedTable(results, questions) {
+      const grouped = {};
+      results.forEach(r => {
+        if (!grouped[r.class]) grouped[r.class] = [];
+        grouped[r.class].push(r);
+      });
+
+      const container = document.getElementById("groupedTable");
+      container.innerHTML = "";
+
+      for (const className in grouped) {
+        const students = grouped[className];
+
+        const details = document.createElement("details");
+        details.open = true;
+        const summary = document.createElement("summary");
+        summary.textContent = `Class: ${className} (${students.length} students)`;
+        details.appendChild(summary);
+
+        const table = document.createElement("table");
+        table.innerHTML = `
+          <colgroup>
+            <col style="width: 10%;">
+            <col style="width: 20%;">
+            <col style="width: 15%;">
+            <col style="width: 55%;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Date</th>
+              <th>Score</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+        `;
+
+        students.forEach(r => {
+          const score = r.answers.filter((a, i) => a === questions[i].answer).length;
+          const detail = r.answers.map((a, i) => {
+            const q = questions[i];
+            const correct = a === q.answer;
+            return `
+              <div>
+                <strong>Q${i + 1}:</strong> ${q.question}<br>
+                <span class="${correct ? 'correct' : 'wrong'}">${correct ? '✔️' : '❌'} Your Answer: ${a}</span><br>
+                <span style="color: blue;">Correct: ${q.answer}</span><br>
+                <span class="explanation">Explanation: ${q.explanation}</span>
+              </div><hr>
+            `;
+          }).join("");
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${r.name}</td>
+            <td>${r.date}</td>
+            <td>${score*5}/${questions.length*5}</td>
+            <td>${detail}</td>
+          `;
+          table.appendChild(row);
+        });
+
+        details.appendChild(table);
+        container.appendChild(details);
+         document.getElementById('quizStatsTable').appendChild(container);
+      }
+    }
+
+    // Load questions from external JSON and run rendering
+    fetch("questions.json")
+      .then(response => response.json())
+      .then(questions => {
+        const results = getAllResults();
+        if (!results.length) return alert("No results to download.");
+
+        renderQuizStatsTable(results, questions);
+        buildGroupedTable(results, questions);
+      })
+      .catch(error => {
+        console.error("Error loading questions.json:", error);
+        alert("Failed to load quiz questions.");
+      });
+  </script>
+
+</body>
+</html>
