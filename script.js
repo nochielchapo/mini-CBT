@@ -62,9 +62,9 @@ const toggleBtn = document.getElementById("theme-toggle");
       // Utility functions
       function getQuizFileForClass(studentClass) {
         const classToQuizMap = {
-          "Scratch Programming": "questions.json",
-          "Web Development": "questions_1.json",
-          "Python Basics": "questions_2.json"
+          "Scratch Programming": "questions_scratch.json",
+          "Web Development": "questions_web.json",
+          "Python Basics": "questions_python.json"
         };
         
         return classToQuizMap[studentClass] || "questions.json"; // Default fallback
@@ -528,3 +528,4 @@ toggleBtn.addEventListener("click", () => {
   toggleBtn.textContent = body.classList.contains("dark") ? "🌙" : "🌞";
 });
 })();
+
